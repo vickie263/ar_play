@@ -141,12 +141,12 @@ public class GLRender{
         vertexBufferId = buffers[0];
         indexBufferId = buffers[1];
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vertexBufferId);
-        GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, 4*vertexBuffer.limit(), vertexBuffer, GLES20.GL_STATIC_DRAW);
+        GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, vertexBuffer.limit(), vertexBuffer, GLES20.GL_STATIC_DRAW);
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
 
         //indexBufferId
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, indexBufferId);
-        GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, 2*indexBuffer.limit(), indexBuffer, GLES20.GL_STATIC_DRAW);
+        GLES20.glBufferData(GLES20.GL_ARRAY_BUFFER, indexBuffer.limit(), indexBuffer, GLES20.GL_STATIC_DRAW);
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
 
         ShaderUtil.checkGLError(TAG, "glimage: OBJ buffer load");
@@ -165,17 +165,8 @@ public class GLRender{
         GLES20.glUseProgram(program);
 
         ShaderUtil.checkGLError(TAG, "glimage: Program creation");
-
-        //将顶点数据写进buffer
         positionAttribute = GLES20.glGetAttribLocation(program, "a_Position");
-        GLES20.glVertexAttribPointer(
-                positionAttribute, COORDS_PER_VERTEX, GLES20.GL_FLOAT, true, 5*FLOAT_SIZE, 0);
         texCoordAttribute = GLES20.glGetAttribLocation(program, "a_TexCoord");
-        GLES20.glVertexAttribPointer(
-                texCoordAttribute, 2, GLES20.GL_FLOAT, true, 5*FLOAT_SIZE, 3*FLOAT_SIZE);
-        GLES20.glEnableVertexAttribArray(positionAttribute);
-        GLES20.glEnableVertexAttribArray(texCoordAttribute);
-
         modelViewUniform = GLES20.glGetUniformLocation(program, "u_ModelView");
         modelViewProjectionUniform = GLES20.glGetUniformLocation(program, "u_ModelViewProjection");
         lightingParametersUniform = GLES20.glGetUniformLocation(program, "u_LightingParameters");
@@ -217,6 +208,7 @@ public class GLRender{
                         0.5f * augmentedImage.getExtentZ()) // lower left
         };
 
+        //获得4个顶点的世界坐标
         Pose anchorPose = centerAnchor.getPose();
         Pose[] worldBoundaryPoses = new Pose[4];
         for (int i = 0; i < 4; ++i) {
@@ -270,7 +262,18 @@ public class GLRender{
         GLES20.glUniformMatrix4fv(modelViewUniform, 1, false, modelViewMatrix, 0);
         GLES20.glUniformMatrix4fv(modelViewProjectionUniform, 1, false, modelViewProjectionMatrix, 0);
 
+        //将顶点数据写进buffer
+        GLES20.glVertexAttribPointer(
+                positionAttribute, COORDS_PER_VERTEX, GLES20.GL_FLOAT, true, 5*FLOAT_SIZE, 0);
+        ShaderUtil.checkGLError(TAG, "glimage: Program creation");
+        GLES20.glVertexAttribPointer(
+                texCoordAttribute, 2, GLES20.GL_FLOAT, true, 5*FLOAT_SIZE, 3*FLOAT_SIZE);
+        ShaderUtil.checkGLError(TAG, "glimage: Program creation");
+        GLES20.glEnableVertexAttribArray(positionAttribute);
+        GLES20.glEnableVertexAttribArray(texCoordAttribute);
 
+        GLES20.glUniform4f(GLES20.glGetUniformLocation(program, "ourColor"), 0.0f, 0.5f, 0.0f, 1.0f);
+        ShaderUtil.checkGLError(TAG, "begin glDrawElements");
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, indexBufferId);
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, indexData.length, GLES20.GL_UNSIGNED_SHORT, 0);
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);

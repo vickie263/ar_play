@@ -21,10 +21,12 @@ uniform vec4 u_LightingParameters;
 uniform vec4 u_MaterialParameters;
 uniform vec4 u_ColorCorrectionParameters;
 uniform vec4 u_ColorTintParameters;
+uniform vec4 ourColor;
 
 varying vec3 v_ViewPosition;
 varying vec3 v_ViewNormal;
 varying vec2 v_TexCoord;
+
 
 void main() {
     // We support approximate sRGB gamma.
@@ -65,7 +67,9 @@ void main() {
             pow(specularStrength, materialSpecularPower);
 
     // Apply SRGB gamma before writing the fragment color.
-    gl_FragColor.a = objectColor.a * u_ColorTintParameters.a;
+    //gl_FragColor.a = objectColor.a * u_ColorTintParameters.a;
     vec3 color = pow(objectColor.rgb * (ambient + diffuse) + specular, vec3(kGamma));
-    gl_FragColor.rgb = color * colorShift;
+    //gl_FragColor.rgb = color * colorShift;
+    //gl_FragColor = texture2D(u_Texture, v_TexCoord);
+    gl_FragColor = ourColor;
 }

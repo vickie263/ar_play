@@ -346,6 +346,7 @@ public class ObjectRenderer {
     // Set the ModelViewProjection matrix in the shader.
     GLES20.glUniformMatrix4fv(modelViewUniform, 1, false, modelViewMatrix, 0);
     GLES20.glUniformMatrix4fv(modelViewProjectionUniform, 1, false, modelViewProjectionMatrix, 0);
+    GLES20.glUniform4f(GLES20.glGetUniformLocation(program, "ourColor"), 0.0f, 0.5f, 0.0f, 1.0f);
 
     // Enable vertex arrays
     GLES20.glEnableVertexAttribArray(positionAttribute);

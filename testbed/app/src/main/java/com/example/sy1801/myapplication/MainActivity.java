@@ -13,6 +13,7 @@ import android.util.Pair;
 import android.view.View;
 import android.widget.Toast;
 
+import com.example.sy1801.myapplication.rendering.AugmentedImageRenderer;
 import com.example.sy1801.myapplication.rendering.GLRender;
 import com.google.ar.core.Anchor;
 import com.google.ar.core.ArCoreApk;
@@ -54,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     private final BackgroundRenderer backgroundRenderer = new BackgroundRenderer();
 
 
+    private AugmentedImageRenderer augmentedImageRenderer;
     private GLRender glRender;
     private boolean updateSurface;
 
@@ -71,7 +73,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         surfaceView.setRenderer(this);
         surfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
         glRender = new GLRender();
-
+        augmentedImageRenderer = new AugmentedImageRenderer();
         displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
 
     }
