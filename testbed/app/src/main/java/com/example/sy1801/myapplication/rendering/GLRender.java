@@ -73,6 +73,8 @@ public class GLRender{
     private int colorTintParameterUniform;
     // Shader location: texture sampler.
     private int textureUniform;
+    // Shader location: SurfaceTexture.getTransformMatrix.
+    private int texMatrixHandle;
 
     private int programId;
     private FloatBuffer vertexBuffer;
@@ -131,23 +133,34 @@ private final float[] vertexData = {
 
     }
 
-    public void createOnGlThread(Context context) throws IOException//, String objAssetName, String diffuseTextureAssetName)
+    public int createOnGlThread(Context context) throws IOException//, String objAssetName, String diffuseTextureAssetName)
     {
         //将textureBitmap绑定到textures[0]上
-        Bitmap textureBitmap =
-                BitmapFactory.decodeStream(context.getAssets().open("models/frame_base.png"));
+//        Bitmap textureBitmap =
+//                BitmapFactory.decodeStream(context.getAssets().open("models/frame_base.png"));
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glGenTextures(textures.length, textures, 0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
+//        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
+//
+//        GLES20.glTexParameteri(
+//                GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR_MIPMAP_LINEAR);
+//        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+//        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, textureBitmap, 0);
+//        GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
+//        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+//        textureBitmap.recycle();
 
-        GLES20.glTexParameteri(
-                GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR_MIPMAP_LINEAR);
-        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
-        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, textureBitmap, 0);
-        GLES20.glGenerateMipmap(GLES20.GL_TEXTURE_2D);
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,textures[0]);
+        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
+                GLES20.GL_TEXTURE_MIN_FILTER,GLES20.GL_NEAREST);//设置MIN 采样方式
+        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
+                GLES20.GL_TEXTURE_MAG_FILTER,GLES20.GL_LINEAR);//设置MAG采样方式
+        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
+                GLES20.GL_TEXTURE_WRAP_S,GLES20.GL_CLAMP_TO_EDGE);//设置S轴拉伸方式
+        GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
+                GLES20.GL_TEXTURE_WRAP_T,GLES20.GL_CLAMP_TO_EDGE);//设置T轴拉伸方式
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
-        textureBitmap.recycle();
 
         ShaderUtil.checkGLError(TAG, "Texture loading");
 
@@ -214,47 +227,24 @@ private final float[] vertexData = {
         colorCorrectionParameterUniform =
                 GLES20.glGetUniformLocation(program, "u_ColorCorrectionParameters");
         colorTintParameterUniform = GLES20.glGetUniformLocation(program, "u_ColorTintParameters");
-
+        texMatrixHandle = GLES20.glGetUniformLocation(program,"uTexMatrix");
         ShaderUtil.checkGLError(TAG, "glimage: Program parameters");
 
         //init modelmatrix = 0
         Matrix.setIdentityM(modelMatrix, 0);
         setMaterialProperties(0.0f, 3.5f, 1.0f, 6.0f);
 //        GLES20.glUniform1i(textureUniform, 0);
+        return textures[0];
     }
 
     public void draw(float[] cameraView,
                      float[] cameraPerspective,
                      AugmentedImage augmentedImage,
                      Anchor centerAnchor,
-                     float[] colorCorrectionRgba) {
-
-        Pose[] localBoundaryPoses = {
-                Pose.makeTranslation(
-                        -0.5f * augmentedImage.getExtentX(),
-                        0.0f,
-                        -0.5f * augmentedImage.getExtentZ()), // upper left
-                Pose.makeTranslation(
-                        0.5f * augmentedImage.getExtentX(),
-                        0.0f,
-                        -0.5f * augmentedImage.getExtentZ()), // upper right
-                Pose.makeTranslation(
-                        0.5f * augmentedImage.getExtentX(),
-                        0.0f,
-                        0.5f * augmentedImage.getExtentZ()), // lower right
-                Pose.makeTranslation(
-                        -0.5f * augmentedImage.getExtentX(),
-                        0.0f,
-                        0.5f * augmentedImage.getExtentZ()) // lower left
-        };
+                     float[] colorCorrectionRgba,
+                     float[] transformMatrix) {
 
         Pose anchorPose = centerAnchor.getPose();
-        Pose[] worldBoundaryPoses = new Pose[4];
-        for (int i = 0; i < 4; ++i) {
-            worldBoundaryPoses[i] = anchorPose.compose(localBoundaryPoses[i]);
-        }
-
-
         float scaleFactor = augmentedImage.getExtentX();
         Log.d("glrender","augmentedImage.getExtentX() ="+augmentedImage.getExtentX());
         float[] modelMatrix = new float[16];
@@ -294,11 +284,14 @@ private final float[] vertexData = {
                 tintColor[2],
                 tintColor[3]);
 
+        if(transformMatrix!=null){
+            GLES20.glUniformMatrix4fv(texMatrixHandle,1,false,transformMatrix,0);
+        }
         // Set the object material properties.
         GLES20.glUniform4f(materialParametersUniform, ambient, diffuse, specular, specularPower);
                 // Attach the object texture.
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[0]);
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textures[0]);
         GLES20.glUniform1i(textureUniform, 0);
 
                 //将顶点数据写进buffer

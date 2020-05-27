@@ -53,7 +53,10 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     private final Map<Integer, Pair<AugmentedImage, Anchor>> augmentedImageMap = new HashMap<>();
     private DisplayRotationHelper displayRotationHelper;
     private final BackgroundRenderer backgroundRenderer = new BackgroundRenderer();
-
+    private SurfaceTexture mSurfaceTexture;
+    private float[] mStMatrix = new float[16];
+    private MediaPlayerHelper mediaPlayerHelper;
+    private EGLHelper mEGLHelper;
 
     private AugmentedImageRenderer augmentedImageRenderer;
     private GLRender glRender;
@@ -71,6 +74,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         surfaceView.setEGLContextClientVersion(2);
         surfaceView.setEGLConfigChooser(8, 8, 8, 8, 16, 0); // Alpha used for plane blending.
         surfaceView.setRenderer(this);
+
         surfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
         glRender = new GLRender();
         augmentedImageRenderer = new AugmentedImageRenderer();
@@ -155,6 +159,10 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             surfaceView.onPause();
             session.pause();
         }
+        if(mEGLHelper != null)
+            mEGLHelper.deinitEGL();
+        if(mediaPlayerHelper != null)
+            mediaPlayerHelper.destory();
     }
 
     @Override
@@ -213,7 +221,12 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             // Create the texture and pass it to ARCore session to be filled during update().
             backgroundRenderer.createOnGlThread(/*context=*/ this);
 //            augmentedImageRenderer.createOnGlThread(/*context=*/ this);
-            glRender.createOnGlThread(this);
+            int textid = glRender.createOnGlThread(this);
+            mSurfaceTexture = new SurfaceTexture(textid);//构建用于预览的surfaceTexture
+            mSurfaceTexture.setOnFrameAvailableListener(this);
+            mediaPlayerHelper = new MediaPlayerHelper(getApplicationContext(),mSurfaceTexture);
+            mEGLHelper = new EGLHelper(mSurfaceTexture);
+            mEGLHelper.initEGL();
         } catch (IOException e) {
             Log.e(TAG, "Failed to read an asset file", e);
         }
@@ -325,9 +338,15 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             Anchor centerAnchor = augmentedImageMap.get(augmentedImage.getIndex()).second;
             switch (augmentedImage.getTrackingState()) {
                 case TRACKING:
-                    glRender.draw(viewmtx, projmtx, augmentedImage, centerAnchor, colorCorrectionRgba);
+                    //得到最新的图像
+                    mSurfaceTexture.updateTexImage();
+                    //得到图像的纹理矩阵
+                    mSurfaceTexture.getTransformMatrix(mStMatrix);
+                    mediaPlayerHelper.initMediaPlayer();
+                    glRender.draw(viewmtx, projmtx, augmentedImage, centerAnchor, colorCorrectionRgba,mStMatrix);
 //          augmentedImageRenderer.draw(
 //              viewmtx, projmtx, augmentedImage, centerAnchor, colorCorrectionRgba);
+                    mEGLHelper.swap();
                     break;
                 default:
                     break;

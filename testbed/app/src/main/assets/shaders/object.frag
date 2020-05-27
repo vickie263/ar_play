@@ -12,10 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#extension GL_OES_EGL_image_external : require
 precision mediump float;
 
-uniform sampler2D u_Texture;
+uniform samplerExternalOES u_Texture;
 
 uniform vec4 u_LightingParameters;
 uniform vec4 u_MaterialParameters;
@@ -70,6 +70,6 @@ void main() {
     //gl_FragColor.a = objectColor.a * u_ColorTintParameters.a;
    // vec3 color = pow(objectColor.rgb * (ambient + diffuse) + specular, vec3(kGamma));
     //gl_FragColor.rgb = color * colorShift;
-    gl_FragColor = texture2D(u_Texture, v_TexCoord);
+    gl_FragColor = texture2D(u_Texture, vec2(v_TexCoord.x, 1.0 - v_TexCoord.y));
     //gl_FragColor = ourColor;
 }

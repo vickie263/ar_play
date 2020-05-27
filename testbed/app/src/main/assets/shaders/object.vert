@@ -23,10 +23,12 @@ attribute vec2 a_TexCoord;
 varying vec3 v_ViewPosition;
 //varying vec3 v_ViewNormal;
 varying vec2 v_TexCoord;
+uniform mat4 uTexMatrix;
 
 void main() {
     v_ViewPosition = (u_ModelView * a_Position).xyz;
     //v_ViewNormal = normalize((u_ModelView * vec4(a_Normal, 0.0)).xyz);
-    v_TexCoord = a_TexCoord;
+    vec4 texcoord = vec4(a_TexCoord.x, a_TexCoord.y, 1.0, 1.0);
+    v_TexCoord = (uTexMatrix * texcoord).xy;
     gl_Position = u_ModelViewProjection * a_Position;
 }

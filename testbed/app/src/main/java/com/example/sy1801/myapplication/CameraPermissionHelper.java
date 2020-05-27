@@ -27,6 +27,7 @@ import android.support.v4.content.ContextCompat;
 public final class CameraPermissionHelper {
   private static final int CAMERA_PERMISSION_CODE = 0;
   private static final String CAMERA_PERMISSION = Manifest.permission.CAMERA;
+  private static final String STORAGE_PERMISSION = Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
   /** Check to see we have the necessary permissions for this app. */
   public static boolean hasCameraPermission(Activity activity) {
@@ -37,7 +38,7 @@ public final class CameraPermissionHelper {
   /** Check to see we have the necessary permissions for this app, and ask for them if we don't. */
   public static void requestCameraPermission(Activity activity) {
     ActivityCompat.requestPermissions(
-        activity, new String[] {CAMERA_PERMISSION}, CAMERA_PERMISSION_CODE);
+        activity, new String[] {CAMERA_PERMISSION, STORAGE_PERMISSION}, CAMERA_PERMISSION_CODE);
   }
 
   /** Check to see if we need to show the rationale for this permission. */
