@@ -14,15 +14,20 @@ import javax.microedition.khronos.egl.EGLSurface;
 public class EGLHelper {
     protected final SurfaceTexture surfaceTexture;
 
+    private static int INITSTATE_NONE = 1;
+    private static int INITSTATE_DOING = 2;
+    private static int INITSTATE_DONE = 3;
     private EGL10 egl;
     private EGLContext eglContext;
     private EGLDisplay eglDisplay;
     private EGLSurface eglSurface;
+    private int initstate = INITSTATE_NONE;
     public EGLHelper(SurfaceTexture surfaceTexture) {
         this.surfaceTexture = surfaceTexture;
     }
 
-    public void initEGL() {
+    public synchronized void initEGL() {
+        initstate = INITSTATE_DOING;
         egl = (EGL10) EGLContext.getEGL();
         //获取显示设备
         eglDisplay = egl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
@@ -44,12 +49,20 @@ public class EGLHelper {
             if (!egl.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
                 throw new RuntimeException("GL Make current Error" + GLUtils.getEGLErrorString(egl.eglGetError()));
             }
+            initstate = INITSTATE_DONE;
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    public boolean isInited()
+    {
+        return initstate == INITSTATE_DONE? true:false;
+    }
+
     public void deinitEGL() {
+        if(null == egl)
+            return;
         egl.eglMakeCurrent(eglDisplay, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
         egl.eglDestroySurface(eglDisplay, eglSurface);
         egl.eglDestroyContext(eglDisplay, eglContext);

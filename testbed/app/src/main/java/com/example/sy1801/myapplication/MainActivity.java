@@ -226,7 +226,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             mSurfaceTexture.setOnFrameAvailableListener(this);
             mediaPlayerHelper = new MediaPlayerHelper(getApplicationContext(),mSurfaceTexture);
             mEGLHelper = new EGLHelper(mSurfaceTexture);
-            mEGLHelper.initEGL();
         } catch (IOException e) {
             Log.e(TAG, "Failed to read an asset file", e);
         }
@@ -338,15 +337,21 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             Anchor centerAnchor = augmentedImageMap.get(augmentedImage.getIndex()).second;
             switch (augmentedImage.getTrackingState()) {
                 case TRACKING:
-                    //得到最新的图像
-                    mSurfaceTexture.updateTexImage();
-                    //得到图像的纹理矩阵
-                    mSurfaceTexture.getTransformMatrix(mStMatrix);
-                    mediaPlayerHelper.initMediaPlayer();
-                    glRender.draw(viewmtx, projmtx, augmentedImage, centerAnchor, colorCorrectionRgba,mStMatrix);
+                    if(mEGLHelper.isInited())
+                    {
+                        //得到最新的图像
+                        mSurfaceTexture.updateTexImage();
+                        //得到图像的纹理矩阵
+                        mSurfaceTexture.getTransformMatrix(mStMatrix);
+                        mediaPlayerHelper.initMediaPlayer();
+                        glRender.draw(viewmtx, projmtx, augmentedImage, centerAnchor, colorCorrectionRgba,mStMatrix);
 //          augmentedImageRenderer.draw(
 //              viewmtx, projmtx, augmentedImage, centerAnchor, colorCorrectionRgba);
-                    mEGLHelper.swap();
+                        mEGLHelper.swap();
+                    }else
+                    {
+                        mEGLHelper.initEGL();
+                    }
                     break;
                 default:
                     break;
